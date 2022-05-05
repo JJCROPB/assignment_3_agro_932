@@ -1,0 +1,236 @@
+---
+title: "GWAS"
+author: "Juan Jimenez"
+date: "04-05-2022"
+output: pdf_document
+---
+
+## Path Normalization
+
+````{r setup, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE) 
+knitr::opts_knit$set(root.dir=normalizePath('..//')) 
+#library(tidyverse)
+```
+
+--------------------------------
+
+# Geographic distribution of germplasm
+
+
+```{r warning=FALSE, eval=T}
+### read in the data from step one
+df <- read.csv("http://ricediversity.org/data/sets/44kgwas/RiceDiversity.44K.germplasm.csv", skip=1)
+df$Latitude <- as.numeric(as.character(df$Latitude))
+range(df$Latitude, na.rm = T)
+df$Longitude <- as.numeric(as.character(df$Longitude))
+range(df$Longitude, na.rm = T)
+```
+
+
+---
+
+# Geographic distribution of germplasm
+
+```{r fig.height=50, fig.width=100, message=TRUE, warning=FALSE, eval=FALSE}
+library(ggmap)
+library(ggplot2)
+##lowerleftlon, lowerleftlat, upperrightlon, upperrightlat
+myloc <- c(-105, -40, 170, 56)
+
+mymap <- get_map(location=myloc, source="stamen", crop=FALSE, color="bw")
+ggmap(mymap) + 
+    geom_point(aes(x = Longitude, y = Latitude), data = df,
+               alpha = .9, size = 1, col="red")
+```
+
+---
+
+# Geographic distribution of germplasm
+
+### Color code the subpopulatios
+
+```{r fig.height=50, fig.width=100, message=TRUE, warning=FALSE, eval=FALSE}
+table(df$Sub.population)
+##lowerleftlon, lowerleftlat, upperrightlon, upperrightlat
+myloc <- c(-105, -40, 170, 56)
+
+mymap <- get_map(location=myloc, source="stamen", crop=FALSE, color="bw")
+ggmap(mymap) + 
+    geom_point(aes(x = Longitude, y = Latitude, color=Sub.population), data = df,
+               alpha = .9, size = 2)
+```
+
+---
+
+# Geographic distribution of germplasm
+
+###  Weight the size of the dots
+
+Count the number of the accessions for each country.
+
+```{r fig.height=50, fig.width=100, message=TRUE, warning=FALSE, eval=FALSE}
+library(plyr)
+c <- ddply(df, .(Country.of.origin), nrow)
+c <- subset(c, Country.of.origin != "")
+df2 <- merge(c, df[, c("Country.of.origin",  "Latitude", "Longitude")], by="Country.of.origin")
+df2 <- df2[!duplicated(df2$Country.of.origin), ]
+
+mymap <- get_map(location=myloc, source="stamen", crop=FALSE, color="bw")
+ggmap(mymap) + 
+    geom_point(aes(x = Longitude, y = Latitude, color=Country.of.origin), data = df2,
+               alpha = .9, size = df2$V1/3) +
+    theme(legend.position = "none")
+head(df2[order(df2$V1, decreasing = T),])
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+---
+
+# Genotypic data
+
+- `data/RiceDiversity_44K_Genotypes_PLINK/`
+  - sativas413.fam
+  - sativas413.map
+  - sativas413.ped
+- Or download data from: [zipped data](http://ricediversity.org/data/sets/44kgwas/)
+
+--------------------
+
+### PLINK PED File format
+
+__.fam__: A text file with no header line, and one line per sample with the following six fields:
+
+- Family ID ('FID')
+- Within-family ID ('IID'; cannot be '0')
+- Within-family ID of father ('0' if father isn't in dataset)
+- Within-family ID of mother ('0' if mother isn't in dataset)
+- Sex code ('1' = male, '2' = female, '0' = unknown)
+- Phenotype value ('1' = control, '2' = case, '-9'/'0'/non-numeric = missing data if case/control)
+
+---
+
+# Genotypic data
+
+- `data/RiceDiversity_44K_Genotypes_PLINK/`
+  - sativas413.fam
+  - sativas413.map
+  - sativas413.ped
+- Or download data from: [zipped data](http://ricediversity.org/data/sets/44kgwas/)
+
+--------------------
+
+### PLINK PED File format
+
+__.map__: A text file with no header file, and one line per variant with the following 3-4 fields:
+
+- Chromosome code. PLINK 1.9 also permits contig names here, but most older programs do not.
+- Variant identifier
+- Position in morgans or centimorgans (optional; also safe to use dummy value of '0')
+- Base-pair coordinate
+
+---
+
+# Genotypic data
+
+- `data/RiceDiversity_44K_Genotypes_PLINK/`
+  - sativas413.fam
+  - sativas413.map
+  - sativas413.ped
+- Or download data from: [zipped data](http://ricediversity.org/data/sets/44kgwas/)
+
+--------------------
+### PLINK PED File format
+
+__.ped__: Contains no header line, and one line per sample with 6+2V fields where V is the number of variants.
+
+- The first six fields are the same as those in a `.fam` file. 
+- The seventh and eighth fields are allele calls for the first variant in the `.map` file ('0' = no call); 
+- the 9th and 10th are allele calls for the second variant; and so on.
+
+---
+
+# Genotypic data manipulation
+
+1. ssh to your HCC account: `ssh USERID@crane.unl.edu`
+2. cd to your agro932-lab repo: `cd PATH/courses/2022-agro932-lab`
+3. Fetch upstream from the GitHub. (git clone a new copy in a diff path)
+4. git pull to sync it: `git pull`
+5. request a quick computing node `srun --qos=short --nodes=1 --licenses=common --ntasks=4 --mem 32G --time 6:00:00 --pty bash`
+
+```{bash, eval=FALSE}
+mkdir largedata
+cp -r data/RiceDiversity_44K_Genotypes_PLINK largedata/
+
+module load plink/1.90
+# convert it to binary file
+cd largedata/RiceDiversity_44K_Genotypes_PLINK
+plink --file sativas413 --make-bed --out binary_sativas413
+```
+
+### Calculate MAF and missingness
+
+[plink v1.9](https://www.cog-genomics.org/plink/1.9/)
+
+- `--freq`: writes a minor allele frequency report to plink.frq
+- `--missing`: produces sample-based and variant-based missing data reports. 
+
+```{bash, eval=FALSE}
+plink -bfile binary_sativas413 --freq --missing --out sativas413
+
+# copy results back to cache folder!
+cd ../../
+cp largedata/RiceDiversity_44K_Genotypes_PLINK/sativas413.frq cache/
+cp largedata/RiceDiversity_44K_Genotypes_PLINK/sativas413.lmiss cache/
+```
+
+### Remote cluster
+
+```{bash, eval=FALSE}
+git add --all
+git commit -m "GWAS frq and missingness"
+git push
+```
+
+### local computer
+
+`git pull`
+
+---
+
+# Visualize MAF and locus missing rate
+
+```{r, eval=FALSE}
+# install.packages("data.table")
+library("data.table")
+
+maf <- fread("cache/sativas413.frq", header=TRUE)
+lmiss <- fread("cache/sativas413.lmiss", header=TRUE)
+
+
+pdf("graphs/maf_lmiss.pdf", width = 10, height=5)
+par(mfrow=c(1,2))
+hist(maf$MAF, breaks=50, col="#cdb79e", main="MAF (SNP = 36,901)", xlab="Minor Allele Freq")
+#abline(v=0.01, lty=2, col="black", lwd=3)
+abline(v=0.05, lty=2, col="red", lwd=3)
+
+hist(lmiss$F_MISS, breaks=35, col="#cdb79e", main="Missingness (SNP = 36,901)", xlab="Missing Rate")
+#abline(v=0.6, lty=2, col="red", lwd=3)
+#abline(v=0.05, lty=2, col="red", lwd=3)
+dev.off()
+```
+
+
