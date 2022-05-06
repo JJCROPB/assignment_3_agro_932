@@ -1,25 +1,28 @@
 PLINK v1.90b4 64-bit (20 Mar 2017)
 Options in effect:
   --bfile binary_sativas413
-  --freq
-  --missing
   --out sativas413
+  --pca header
 
-Hostname: c3717.crane.hcc.unl.edu
+Hostname: c2529.crane.hcc.unl.edu
 Working directory: /home/frelslab/juandj/assignment_3_agro_932/largedata/RiceDiversity_44K_Genotypes_PLINK
-Start time: Wed May  4 22:59:58 2022
+Start time: Fri May  6 09:40:43 2022
 
-Random number seed: 1651723198
+Random number seed: 1651848043
 515634 MB RAM detected; reserving 257817 MB for main workspace.
 36901 variants loaded from .bim file.
 413 people (0 males, 0 females, 413 ambiguous) loaded from .fam.
 Ambiguous sex IDs written to sativas413.nosex .
-Using 1 thread (no multithreaded calculations invoked).
+413 phenotype values loaded from .fam.
+Warning: Ignoring phenotypes of missing-sex samples.  If you don't want those
+phenotypes to be ignored, use the --allow-no-sex flag.
+Using up to 35 threads (change this with --threads).
 Before main variant filters, 413 founders and 0 nonfounders present.
 Calculating allele frequencies... done.
 Total genotyping rate is 0.956644.
---freq: Allele frequencies (founders only) written to sativas413.frq .
---missing: Sample missing data report written to sativas413.imiss, and
-variant-based missing data report written to sativas413.lmiss.
+36901 variants and 413 people pass filters and QC.
+Note: No phenotypes present.
+Relationship matrix calculation complete.
+--pca: Results saved to sativas413.eigenval and sativas413.eigenvec .
 
-End time: Wed May  4 22:59:59 2022
+End time: Fri May  6 09:40:44 2022
